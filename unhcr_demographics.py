@@ -124,21 +124,14 @@ class UnhcrDemographicsServer:
             try:
                 line = sys.stdin.readline().strip()
                 if not line:
-                    print("No input received", file=sys.stderr)
                     continue
-                print(f"Received request: {line}", file=sys.stderr)
                 request = json.loads(line)
                 response = self.handle_request(request)
-                print(f"Sending response: {json.dumps(response)}", file=sys.stderr)
                 print(json.dumps(response), flush=True)
             except json.JSONDecodeError:
-                error_response = {"id": 0, "error": {"code": ErrorCode.INVALID_ARGUMENTS, "message": "Invalid JSON"}}
-                print(f"Error: Invalid JSON - {line}", file=sys.stderr)
-                print(json.dumps(error_response), flush=True)
+                print(json.dumps({"id": 0, "error": {"code": ErrorCode.INVALID_ARGUMENTS, "message": "Invalid JSON"}}), flush=True)
             except Exception as e:
-                error_response = {"id": 0, "error": {"code": ErrorCode.INTERNAL_ERROR, "message": str(e)}}
-                print(f"Error in run loop: {str(e)}", file=sys.stderr)
-                print(json.dumps(error_response), flush=True)
+                print(json.dumps({"id": 0, "error": {"code": ErrorCode.INTERNAL_ERROR, "message": str(e)}}), flush=True)
 
 if __name__ == "__main__":
     server = UnhcrDemographicsServer()
