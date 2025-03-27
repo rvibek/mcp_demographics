@@ -1,0 +1,4 @@
+name: mcp_demographics
+version: 0.1.0
+runtime: python3
+entry: unhcr_demographics.py
