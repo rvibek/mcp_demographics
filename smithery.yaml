@@ -1,15 +1,14 @@
-name: mcp_demographics
-version: 0.1.0
-runtime: docker
-configSchema:
-  type: object
-  properties: {}
-  additionalProperties: false
-commandFunction: |
-  function(config) {
-    return {
-      command: ["python", "unhcr_demographics.py"],
-      args: [],
-      env: {}
-    };
-  }
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+    additionalProperties: false
+  commandFunction: |-
+    (config) => ({
+      "command": "python3",
+      "args": [
+        "unhcr_demographics.py"
+      ],
+      "env": {}
+    })
