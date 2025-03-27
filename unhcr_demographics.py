@@ -6,6 +6,7 @@ import sys
 from typing import Any, Dict, List, Optional
 
 import requests
+import websocket
 
 
 class ErrorCode:
@@ -71,15 +72,13 @@ class UnhcrDemographicsServer:
             )
             response.raise_for_status()
 
-            # Debug: Log raw response
             raw_data = response.json()
             print(f"Raw API response: {json.dumps(raw_data, indent=2)}", file=sys.stderr)
 
-            # Adjust based on actual structure
             data = raw_data.get("data", raw_data)
             if not isinstance(data, list):
                 if isinstance(data, dict):
-                    data = [data]  # Wrap single object in a list
+                    data = [data]
                 else:
                     raise ValueError("Unexpected API response format")
 
@@ -118,20 +117,39 @@ class UnhcrDemographicsServer:
         except Exception as e:
             return {"id": request_id, "error": {"code": ErrorCode.INTERNAL_ERROR, "message": str(e)}}
 
+    def on_message(self, ws, message):
+        print(f"Received: {message}", file=sys.stderr)
+        try:
+            request = json.loads(message)
+            response = self.handle_request(request)
+            print(f"Sending: {json.dumps(response)}", file=sys.stderr)
+            ws.send(json.dumps(response))
+        except Exception as e:
+            error_response = {"id": 0, "error": {"code": ErrorCode.INTERNAL_ERROR, "message": str(e)}}
+            print(f"Error: {str(e)}", file=sys.stderr)
+            ws.send(json.dumps(error_response))
+
+    def on_error(self, ws, error):
+        print(f"WebSocket error: {error}", file=sys.stderr)
+
+    def on_close(self, ws, close_status_code, close_msg):
+        print("WebSocket connection closed", file=sys.stderr)
+        self.running = False
+
+    def on_open(self, ws):
+        print("WebSocket connection opened", file=sys.stderr)
+
     def run(self):
-        print("UNHCR Demographics MCP server running on stdio", file=sys.stderr)
-        while self.running:
-            try:
-                line = sys.stdin.readline().strip()
-                if not line:
-                    continue
-                request = json.loads(line)
-                response = self.handle_request(request)
-                print(json.dumps(response), flush=True)
-            except json.JSONDecodeError:
-                print(json.dumps({"id": 0, "error": {"code": ErrorCode.INVALID_ARGUMENTS, "message": "Invalid JSON"}}), flush=True)
-            except Exception as e:
-                print(json.dumps({"id": 0, "error": {"code": ErrorCode.INTERNAL_ERROR, "message": str(e)}}), flush=True)
+        print("Starting WebSocket server...", file=sys.stderr)
+        ws_url = "wss://server.smithery.ai/@rvibek/mcp_demographics"
+        ws = websocket.WebSocketApp(
+            ws_url,
+            on_message=self.on_message,
+            on_error=self.on_error,
+            on_close=self.on_close,
+            on_open=self.on_open
+        )
+        ws.run_forever()
 
 if __name__ == "__main__":
     server = UnhcrDemographicsServer()
