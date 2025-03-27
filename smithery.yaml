@@ -1,0 +1,16 @@
+name: mcp_demographics
+version: 0.1.0
+runtime: docker
+entry: unhcr_demographics.py
+configSchema:
+  type: object
+  properties: {}
+  additionalProperties: false
+commandFunction: |
+  function(config) {
+    return {
+      command: ["python", "unhcr_demographics.py"],
+      args: [],
+      env: {}
+    };
+  }
